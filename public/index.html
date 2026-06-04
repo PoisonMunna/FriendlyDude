@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>FriendlyDude</title>
+  <!-- SEO & Styling Meta -->
+  <meta name="description" content="A vibrant, modern, light-themed social media application for micro-connections.">
+  <!-- Fonts & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <link rel="stylesheet" href="style.css">
+  <link rel="shortcut icon" href="image/image.png" type="image/x-icon">
+  <script>
+    window.API_BASE_URL = "__API_BASE_URL__";
+    
+    // Immediately apply theme to prevent flashing on page load
+    (function() {
+      const savedTheme = localStorage.getItem('theme');
+      const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+      const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
+      document.documentElement.setAttribute('data-theme', initialTheme);
+    })();
+  </script>
+</head>
+<body>
+
+  <!-- Background Glow Orbs -->
+  <div class="bg-glow-orb orb-1"></div>
+  <div class="bg-glow-orb orb-2"></div>
+  <div class="bg-glow-orb orb-3"></div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="toast-container"></div>
+
+  <!-- Header Navigation -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="logo-area" id="logo-btn">
+        <div class="logo-icon"><i class="fa-solid fa-feather-pointed"></i></div>
+        <span class="logo-text">FriendlyDude</span>
+      </div>
+
+      <nav class="nav-links">
+        <button class="nav-btn active" id="feed-nav-btn"><i class="fa-solid fa-house-chimney"></i> <span>Feed</span></button>
+        <button class="nav-btn" id="explore-nav-btn"><i class="fa-solid fa-compass"></i> <span>Explore</span></button>
+        <button class="nav-btn" id="profile-nav-btn" style="display: none;"><i class="fa-solid fa-user"></i> <span>My Profile</span></button>
+      </nav>
+
+      <button class="theme-toggle-btn" id="theme-toggle-btn" title="Toggle Light/Dark Theme">
+        <i class="fa-solid fa-moon"></i>
+      </button>
+
+      <div class="auth-status-area" id="auth-status-container">
+        <!-- Will be dynamically populated -->
+        <button class="btn btn-primary" id="login-trigger-btn"><i class="fa-solid fa-right-to-bracket"></i> Login</button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <main class="main-layout">
+    <div class="container grid-layout">
+      
+      <!-- Left Sidebar (Current User Summary) -->
+      <aside class="sidebar left-sidebar" id="sidebar-user-card">
+        <div class="card profile-summary-card">
+          <div class="profile-banner"></div>
+          <div class="profile-avatar-container">
+            <div class="avatar" id="sidebar-avatar">?</div>
+          </div>
+          <div class="profile-details">
+            <h3 id="sidebar-username">Guest User</h3>
+            <p class="handle" id="sidebar-handle">@guest</p>
+            <p class="bio-text" id="sidebar-bio">Log in to post, comment, follow other users and share your vibe.</p>
+            
+            <div class="stats-row" style="display: none;" id="sidebar-stats">
+              <div class="stat-item">
+                <span class="stat-num" id="sidebar-followers-count">0</span>
+                <span class="stat-label">Followers</span>
+              </div>
+              <div class="stat-item">
+                <span class="stat-num" id="sidebar-following-count">0</span>
+                <span class="stat-label">Following</span>
+              </div>
+            </div>
+            
+            <button class="btn btn-outline btn-sm w-full" id="sidebar-action-btn"><i class="fa-solid fa-sign-in-alt"></i> Sign In</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Central Content Feed Area -->
+      <section class="main-feed-area">
+        
+        <!-- Feed Page View -->
+        <div id="page-feed" class="page-view active">
+          <!-- Post Composer (Protected) -->
+          <div class="card compose-card" id="compose-container" style="display: none;">
+            <div class="compose-header">
+              <div class="avatar avatar-sm" id="compose-avatar">U</div>
+              <h3>Share your thoughts...</h3>
+            </div>
+            <form id="create-post-form">
+              <textarea id="post-content" placeholder="What's on your mind today? Share a vibe!" maxlength="1000" required></textarea>
+              <div class="compose-footer">
+                <span class="char-counter"><span id="char-count">0</span>/1000</span>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="fa-solid fa-paper-plane"></i> Post</button>
+              </div>
+            </form>
+          </div>
+
+          <!-- Feed Title -->
+          <div class="feed-section-header">
+            <h2>Recent Vibrations</h2>
+            <button class="btn btn-icon" id="refresh-feed-btn" title="Refresh Feed"><i class="fa-solid fa-rotate"></i></button>
+          </div>
+
+          <!-- Feed Container -->
+          <div id="posts-container" class="posts-list">
+            <div class="loader-container">
+              <div class="spinner"></div>
+              <p>Loading vibes...</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Explore Users Page View -->
+        <div id="page-explore" class="page-view">
+          <div class="feed-section-header">
+            <h2>Discover People</h2>
+            <p class="subtitle-text">Connect with vibes from around the world.</p>
+          </div>
+          <div id="users-directory-container" class="users-grid">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+        <!-- Dynamic Profile Page View -->
+        <div id="page-profile" class="page-view">
+          <div class="card profile-header-card">
+            <div class="profile-header-banner"></div>
+            <div class="profile-header-meta">
+              <div class="profile-header-avatar-row">
+                <div class="avatar avatar-xl" id="profile-avatar">P</div>
+                <div class="profile-header-actions" id="profile-actions-container">
+                  <!-- Follow / Unfollow / Edit Bio Buttons -->
+                </div>
+              </div>
+              <h2 id="profile-name">Username</h2>
+              <p class="handle" id="profile-handle">@username</p>
+              
+              <!-- Bio display and edit forms -->
+              <div id="profile-bio-container">
+                <p class="profile-bio" id="profile-bio-text">This user hasn't written a bio yet.</p>
+                <div id="bio-edit-form-container" style="display: none;">
+                  <textarea id="bio-edit-input" maxlength="250" placeholder="Write something about yourself..."></textarea>
+                  <div class="bio-edit-actions">
+                    <button class="btn btn-text btn-sm" id="bio-cancel-btn">Cancel</button>
+                    <button class="btn btn-primary btn-sm" id="bio-save-btn">Save Bio</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="profile-stats-row">
+                <div class="p-stat">
+                  <strong id="profile-followers-num">0</strong>
+                  <span>followers</span>
+                </div>
+                <div class="p-stat">
+                  <strong id="profile-following-num">0</strong>
+                  <span>following</span>
+                </div>
+                <div class="p-stat">
+                  <strong id="profile-posts-num">0</strong>
+                  <span>posts</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="feed-section-header">
+            <h3 id="profile-feed-title">User's Timeline</h3>
+          </div>
+
+          <div id="user-posts-container" class="posts-list">
+            <!-- Dynamically populated -->
+          </div>
+        </div>
+
+      </section>
+
+      <!-- Right Sidebar (Suggested People/Trending) -->
+      <aside class="sidebar right-sidebar">
+        <div class="card suggestions-card">
+          <div class="card-header">
+            <h3>Who to follow</h3>
+          </div>
+          <div class="suggestions-list" id="suggestions-container">
+            <!-- Dynamic user suggestions -->
+            <p class="empty-text">Loading suggestions...</p>
+          </div>
+        </div>
+        <footer class="app-footer-text">
+          <p>&copy; 2026 FriendlyDude Inc. </p>
+        </footer>
+      </aside>
+
+    </div>
+  </main>
+
+  <!-- Authentication Modal (Log In / Sign Up Overlay) -->
+  <div class="modal-overlay" id="auth-modal">
+    <div class="modal-card">
+      <button class="modal-close" id="auth-modal-close-btn">&times;</button>
+      
+      <!-- Tab selectors -->
+      <div class="modal-tabs">
+        <button class="modal-tab-btn active" id="tab-login-btn">Log In</button>
+        <button class="modal-tab-btn" id="tab-signup-btn">Sign Up</button>
+      </div>
+
+      <!-- Log In Form -->
+      <div class="modal-tab-content active" id="form-login-container">
+        <form id="login-form">
+          <div class="form-group">
+            <label for="login-email">Email or Username</label>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-envelope"></i>
+              <input type="text" id="login-email" placeholder="Enter your email or username" required autocomplete="username">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="login-password">Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="login-password" placeholder="Enter your password" required autocomplete="current-password">
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-full mt-lg"><i class="fa-solid fa-right-to-bracket"></i> Log In</button>
+        </form>
+      </div>
+
+      <!-- Sign Up Form -->
+      <div class="modal-tab-content" id="form-signup-container">
+        <form id="signup-form">
+          <div class="form-group">
+            <label for="signup-username">Username</label>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-user"></i>
+              <input type="text" id="signup-username" placeholder="e.g. janesmith (min 3 chars)" required pattern="[A-Za-z0-9_]{3,}" title="Only letters, numbers, and underscores (minimum 3 characters)" autocomplete="username">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-email">Email Address</label>
+            <div class="input-wrapper">
+              <i class="fa-regular fa-envelope"></i>
+              <input type="email" id="signup-email" placeholder="e.g. jane@example.com" required autocomplete="email">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-password">Password</label>
+            <div class="input-wrapper">
+              <i class="fa-solid fa-lock"></i>
+              <input type="password" id="signup-password" placeholder="Choose a strong password" required minlength="6" autocomplete="new-password">
+            </div>
+          </div>
+          <div class="form-group">
+            <label for="signup-bio">Bio (Optional)</label>
+            <div class="input-wrapper align-start">
+              <i class="fa-regular fa-address-card mt-sm"></i>
+              <textarea id="signup-bio" placeholder="Tell us a bit about yourself..." maxlength="200"></textarea>
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary w-full mt-lg"><i class="fa-solid fa-user-plus"></i> Create Account</button>
+        </form>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Client-side Scripts -->
+  <script type="module" src="app.js"></script>
+</body>
+</html>
